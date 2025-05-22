@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>德高铝型材智能检测系统 - 检测结果</title>
+    <style>
+        :root {
+            --primary-color: #00688B;
+            --secondary-color: #B0E2FF;
+            --background-color: #F0F8FF;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --error-color: #FF5252;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: "微软雅黑", sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h2 {
+            font-size: 22px;
+        }
+        .content {
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+        .toolbar {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #005373;
+        }
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: var(--primary-color);
+        }
+        .btn-secondary:hover {
+            background: #87CEFA;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .image-item {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        .image-item:hover {
+            transform: translateY(-5px);
+        }
+        .image-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .image-info {
+            padding: 10px;
+            text-align: center;
+        }
+        .defect-marker {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--error-color);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+        }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .result-table th, .result-table td {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .result-table th {
+            background: var(--primary-color);
+            color: white;
+        }
+        .status-normal {
+            color: var(--success-color);
+        }
+        .status-abnormal {
+            color: var(--error-color);
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination button {
+            margin: 0 5px;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .pagination button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>铝型材检测结果</h2>
+        <button onclick="backToMain()" class="btn">返回主界面</button>
+    </div>
+
+    <div class="content">
+        <div class="toolbar">
+            <div>
+                <button class="btn btn-secondary" onclick="refreshResults()">刷新结果</button>
+                <button class="btn btn-secondary" onclick="exportResults()">导出报告</button>
+            </div>
+            <div>
+                <select id="batchSelect">
+                    <option value="20250522">2025-05-22批次</option>
+                    <option value="20250521">2025-05-21批次</option>
+                    <option value="20250520">2025-05-20批次</option>
+                </select>
+                <button class="btn" onclick="changeBatch()">切换批次</button>
+            </div>
+        </div>
+
+        <div class="image-grid" id="imageGrid">
+            <!-- JavaScript动态生成图片 -->
+        </div>
+
+        <div class="result-table-container">
+            <h3>检测数据详情</h3>
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>行号</th>
+                        <th>缺陷数</th>
+                        <th>加工孔</th>
+                        <th>左特征</th>
+                        <th>右特征</th>
+                        <th>中特征</th>
+                        <th>检测结果</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="resultTable">
+                    <!-- JavaScript动态生成数据 -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination">
+            <button onclick="changePage(1)">1</button>
+            <button onclick="changePage(2)">2</button>
+            <button onclick="changePage(3)">3</button>
+            <button onclick="changePage(4)">4</button>
+            <button onclick="changePage(5)">5</button>
+        </div>
+    </div>
+
+    <!-- 大图查看模态框 -->
+    <div id="imageModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeImageModal()">&times;</span>
+            <h3 id="modalTitle">铝型材检测原图</h3>
+            <img id="modalImage" src="" alt="检测原图" style="max-width: 100%;">
+            <div id="modalInfo" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 1200px;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+
+    <script>
+        // 检查用户是否已登录
+        function checkLogin() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            if (!isLoggedIn || isLoggedIn !== 'true') {
+                window.location.href = "index.html";
+            }
+        }
+
+        // 返回主界面
+        function backToMain() {
+            window.location.href = "main.html";
+        }
+
+        // 生成模拟图片数据
+        function generateImages() {
+            const imageGrid = document.getElementById('imageGrid');
+            imageGrid.innerHTML = '';
+            
+            for (let i = 0; i < 36; i++) {
+                const hasDefect = Math.random() > 0.7;
+                const imageId = i + 1;
+                
+                const imageItem = document.createElement('div');
+                imageItem.className = 'image-item';
+                
+                let imageUrl = `https://picsum.photos/id/${1000 + i}/200/150`;
+                if (hasDefect) {
+                    imageUrl = `https://picsum.photos/id/${1010 + i}/200/150`;
+                }
+                
+                imageItem.innerHTML = `
+                    ${hasDefect ? `<div class="defect-marker">${Math.floor(Math.random() * 3) + 1}</div>` : ''}
+                    <img src="${imageUrl}" alt="铝型材${imageId}" onclick="openImageModal(${imageId}, ${hasDefect})">
+                    <div class="image-info">
+                        <p>料${imageId}</p>
+                        <p class="${hasDefect ? 'status-abnormal' : 'status-normal'}">${hasDefect ? '不合格' : '合格'}</p>
+                    </div>
+                `;
+                
+                imageGrid.appendChild(imageItem);
+            }
+        }
+
+        // 生成模拟表格数据
+        function generateTableData() {
+            const tableBody = document.getElementById('resultTable');
+            tableBody.innerHTML = '';
+            
+            for (let i = 0; i < 20; i++) {
+                const row = document.createElement('tr');
+                
+                const defectCount = Math.floor(Math.random() * 5);
+                const holeStatus = defectCount > 0 ? '异常' : '正常';
+                const leftFeature = (Math.random() * 1.9 + 0.1).toFixed(1);
+                const rightFeature = (Math.random() * 1.9 + 0.1).toFixed(1);
+                const centerFeature = (Math.random() * 1.9 + 0.1).toFixed(1);
+                const result = defectCount > 0 ? '不合格' : '合格';
+                const resultClass = defectCount > 0 ? 'status-abnormal' : 'status-normal';
+                
+                row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${defectCount}</td>
+                    <td>${holeStatus}</td>
+                    <td>${leftFeature}</td>
+                    <td>${rightFeature}</td>
+                    <td>${centerFeature}</td>
+                    <td class="${resultClass}">${result}</td>
+                    <td>
+                        <button onclick="viewDetails(${i + 1})">详情</button>
+                        <button onclick="viewImage(${i + 1})">查看原图</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            }
+        }
+
+        // 大图查看功能
+        function openImageModal(imageId, hasDefect) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalInfo = document.getElementById('modalInfo');
+            
+            modalTitle.textContent = `料${imageId}检测原图`;
+            
+            let imageUrl = `https://picsum.photos/id/${1000 + imageId}/800/600`;
+            if (hasDefect) {
+                imageUrl = `https://picsum.photos/id/${1010 + imageId}/800/600`;
+            }
+            
+            modalImage.src = imageUrl;
+            
+            // 模拟检测信息
+            const defectCount = hasDefect ? Math.floor(Math.random() * 3) + 1 : 0;
+            const detectionTime = new Date().toLocaleString();
+            const result = hasDefect ? '不合格' : '合格';
+            const resultClass = hasDefect ? 'status-abnormal' : 'status-normal';
+            
+            modalInfo.innerHTML = `
+                <p>检测时间: ${detectionTime}</p>
+                <p>缺陷数量: ${defectCount}</p>
+                <p class="${resultClass}">检测结果: ${result}</p>
+                ${hasDefect ? `<p class="status-abnormal">缺陷类型: 表面划伤、槽口变形</p>` : ''}
+            `;
+            
+            modal.style.display = 'block';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        // 表格操作功能
+        function viewDetails(rowNum) {
+            alert(`查看料${rowNum}的详细检测数据...`);
+        }
+
+        function viewImage(rowNum) {
+            const hasDefect = Math.random() > 0.7;
+            openImageModal(rowNum, hasDefect);
+        }
+
+        // 页面操作
+        function refreshResults() {
+            alert("刷新检测结果...");
+            generateImages();
+            generateTableData();
+        }
+
+        function exportResults() {
+            alert("导出检测报告...");
+            // 实际应用中，这里应该调用后端导出API
+        }
+
+        function changeBatch() {
+            const batchSelect = document.getElementById('batchSelect');
+            const selectedBatch = batchSelect.value;
+            alert(`切换到${selectedBatch}批次的检测结果`);
+            generateImages();
+            generateTableData();
+        }
+
+        function changePage(pageNum) {
+            alert(`切换到第${pageNum}页`);
+            // 实际应用中，这里应该加载对应页的数据
+        }
+
+        // 页面加载时检查登录状态并生成数据
+        window.onload = function() {
+            checkLogin();
+            generateImages();
+            generateTableData();
+        };
+    </script>
+</body>
+</html>
+    

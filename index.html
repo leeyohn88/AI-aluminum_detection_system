@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>德高铝型材智能检测系统 - 登录</title>
+    <style>
+        body { 
+            background: linear-gradient(135deg, #00688B 0%, #005373 100%);
+            font-family: "微软雅黑", sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .login-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 350px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .login-container:hover {
+            transform: translateY(-5px);
+        }
+        .login-header {
+            margin-bottom: 30px;
+        }
+        .login-header h2 {
+            color: #00688B;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #00688B;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #00688B;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .login-btn:hover {
+            background: #005373;
+        }
+        .links {
+            margin-top: 20px;
+            font-size: 13px;
+        }
+        .links a {
+            color: #00688B;
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.3s;
+        }
+        .links a:hover {
+            color: #005373;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h2>德高铝型材智能检测系统</h2>
+            <p>先进的AI视觉检测解决方案</p>
+        </div>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" placeholder="请输入用户名" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" placeholder="请输入密码" required>
+            </div>
+            
+            <button type="button" class="login-btn" onclick="handleLogin()">登录</button>
+        </form>
+        
+        <div class="links">
+            <a href="#" onclick="showRegisterModal()">注册账号</a>
+            <a href="#" onclick="showForgotPasswordModal()">忘记密码</a>
+        </div>
+    </div>
+
+    <!-- 注册模态框 -->
+    <div id="registerModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeRegisterModal()">&times;</span>
+            <h3>注册新账号</h3>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="regUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>真实姓名</label>
+                    <input type="text" id="regRealname" required>
+                </div>
+                <div class="form-group">
+                    <label>身份证号</label>
+                    <input type="text" id="regIdcard" required>
+                </div>
+                <button type="button" onclick="handleRegister()">注册</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 忘记密码模态框 -->
+    <div id="forgotPasswordModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeForgotPasswordModal()">&times;</span>
+            <h3>重置密码</h3>
+            <form id="forgotPasswordForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="fpUsername" required>
+                </div>
+                <button type="button" onclick="handleForgotPassword()">重置</button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 300px;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+
+    <script>
+        // 模拟用户数据存储
+        let users = {
+            "leeyohn": { 
+                password: "wode123321", 
+                realname: "管理员", 
+                idcard: "123456789012345678" 
+            }
+        };
+
+        // 从localStorage加载用户数据
+        function loadUsers() {
+            const savedUsers = localStorage.getItem('metalDetectionUsers');
+            if (savedUsers) {
+                users = JSON.parse(savedUsers);
+            }
+        }
+
+        // 保存用户数据到localStorage
+        function saveUsers() {
+            localStorage.setItem('metalDetectionUsers', JSON.stringify(users));
+        }
+
+        // 登录处理
+        function handleLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // 检查万能账号
+            if (username === "leeyohn" && password === "wode123321") {
+                alert("管理员登录成功！");
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('username', username);
+                window.location.href = "main.html";
+                return;
+            }
+            
+            // 检查普通用户
+            if (users[username] && users[username].password === password) {
+                alert("登录成功！");
+                sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('username', username);
+                window.location.href = "main.html";
+            } else {
+                alert("用户名或密码错误！");
+            }
+        }
+
+        // 注册相关函数
+        function showRegisterModal() {
+            document.getElementById('registerModal').style.display = 'block';
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('registerModal').style.display = 'none';
+        }
+
+        function handleRegister() {
+            const username = document.getElementById('regUsername').value;
+            const password = document.getElementById('regPassword').value;
+            const realname = document.getElementById('regRealname').value;
+            const idcard = document.getElementById('regIdcard').value;
+            
+            if (!username || !password || !realname || !idcard) {
+                alert("所有字段均为必填项！");
+                return;
+            }
+            
+            if (users[username]) {
+                alert("用户名已存在！");
+                return;
+            }
+            
+            users[username] = {
+                password,
+                realname,
+                idcard
+            };
+            
+            saveUsers();
+            alert("注册成功，请登录！");
+            closeRegisterModal();
+        }
+
+        // 忘记密码相关函数
+        function showForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'block';
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgotPasswordModal').style.display = 'none';
+        }
+
+        function handleForgotPassword() {
+            const username = document.getElementById('fpUsername').value;
+            
+            if (!users[username]) {
+                alert("用户名不存在！");
+                return;
+            }
+            
+            const newPassword = prompt("请输入新密码：");
+            if (newPassword) {
+                users[username].password = newPassword;
+                saveUsers();
+                alert("密码已重置，请使用新密码登录！");
+                closeForgotPasswordModal();
+            }
+        }
+
+        // 页面加载时加载用户数据
+        loadUsers();
+    </script>
+</body>
+</html>
+    

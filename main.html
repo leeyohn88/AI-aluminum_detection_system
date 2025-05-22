@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>德高铝型材智能检测系统</title>
+    <style>
+        :root {
+            --primary-color: #00688B;
+            --secondary-color: #B0E2FF;
+            --background-color: #F0F8FF;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: "微软雅黑", sans-serif;
+            background: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1920px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 20px;
+        }
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 24px;
+        }
+        .user-info {
+            font-size: 14px;
+        }
+        .module {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        .module:hover {
+            transform: translateY(-3px);
+        }
+        .module-header {
+            font-size: 18px;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table th, .table td {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .table th {
+            background: var(--secondary-color);
+            color: var(--primary-color);
+        }
+        .btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background 0.3s;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #005373;
+        }
+        .param-group {
+            margin-bottom: 15px;
+        }
+        .param-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .param-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+        .exposure-params {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>德高铝型材智能检测系统</h1>
+        <div class="user-info">
+            <span id="currentUser">欢迎，管理员</span>
+            <button onclick="logout()" class="btn" style="background: #ff6b6b; padding: 5px 10px; font-size: 14px;">退出登录</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 左侧区域 - 检测数据 -->
+        <div class="left-section">
+            <!-- 线纹识别模块 -->
+            <div class="module">
+                <div class="module-header">线纹识别</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>位置</th>
+                            <th>D面</th>
+                            <th>A面</th>
+                            <th>B面</th>
+                            <th>C面</th>
+                            <th>灰度值</th>
+                        </tr>
+                    </thead>
+                    <tbody id="line-data">
+                        <!-- JavaScript动态生成数据 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 缺陷参数模块 -->
+            <div class="module">
+                <div class="module-header">缺陷参数</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>类型</th>
+                            <th>面积</th>
+                            <th>长轴</th>
+                            <th>短轴</th>
+                            <th>槽宽</th>
+                        </tr>
+                    </thead>
+                    <tbody id="defect-data">
+                        <!-- JavaScript动态生成数据 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 灰度参数模块 -->
+            <div class="module">
+                <div class="module-header">灰度参数</div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>参数类型</th>
+                                <th>参数值</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>一般/线状</td>
+                                <td><input type="text" id="gray-general" value="180" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>黑线灰度</td>
+                                <td><input type="text" id="gray-black" value="200" readonly></td>
+                            </tr>
+                            <tr>
+                                <td>深黑区域</td>
+                                <td><input type="text" id="gray-deep" value="140" readonly></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 槽宽标定模块 -->
+            <div class="module">
+                <div class="module-header">槽宽标定</div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>料号</th>
+                            <th>标准值</th>
+                            <th>实测值</th>
+                            <th>差值</th>
+                        </tr>
+                    </thead>
+                    <tbody id="slot-data">
+                        <!-- JavaScript动态生成数据 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 右侧区域 - 参数设置与系统状态 -->
+        <div class="right-section">
+            <!-- 曝光参数模块 -->
+            <div class="module">
+                <div class="module-header">曝光参数</div>
+                <div class="exposure-params">
+                    <div class="param-group">
+                        <label>曝光1</label>
+                        <input type="number" id="exposure1" min="500" max="1500" value="1000">
+                    </div>
+                    <div class="param-group">
+                        <label>曝光2</label>
+                        <input type="number" id="exposure2" min="500" max="1500" value="950">
+                    </div>
+                    <div class="param-group">
+                        <label>曝光3</label>
+                        <input type="number" id="exposure3" min="500" max="1500" value="1050">
+                    </div>
+                    <div class="param-group">
+                        <label>曝光4</label>
+                        <input type="number" id="exposure4" min="500" max="1500" value="1100">
+                    </div>
+                    <div class="param-group">
+                        <label>曝光5</label>
+                        <input type="number" id="exposure5" min="500" max="1500" value="900">
+                    </div>
+                    <div class="param-group">
+                        <label>曝光6</label>
+                        <input type="number" id="exposure6" min="500" max="1500" value="1200">
+                    </div>
+                    <div class="param-group">
+                        <label>曝光7</label>
+                        <input type="number" id="exposure7" min="500" max="1500" value="850">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 裁剪参数模块 -->
+            <div class="module">
+                <div class="module-header">裁剪参数</div>
+                <div class="param-group">
+                    <label>X值</label>
+                    <div class="row">
+                        <input type="number" id="crop-x1" min="2000" max="4000" value="2500" style="width: 30%">
+                        <input type="number" id="crop-x2" min="2000" max="4000" value="3500" style="width: 30%">
+                        <input type="number" id="crop-x3" min="2000" max="4000" value="3000" style="width: 30%">
+                    </div>
+                </div>
+                <div class="param-group">
+                    <label>Y值</label>
+                    <div class="row">
+                        <input type="number" id="crop-y1" min="500" max="4500" value="1000" style="width: 15%">
+                        <input type="number" id="crop-y2" min="500" max="4500" value="2000" style="width: 15%">
+                        <input type="number" id="crop-y3" min="500" max="4500" value="3000" style="width: 15%">
+                        <input type="number" id="crop-y4" min="500" max="4500" value="4000" style="width: 15%">
+                        <input type="number" id="crop-y5" min="500" max="4500" value="1500" style="width: 15%">
+                        <input type="number" id="crop-y6" min="500" max="4500" value="2500" style="width: 15%">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 特征参数模块 -->
+            <div class="module">
+                <div class="module-header">特征参数</div>
+                <div class="feature-params">
+                    <div class="param-group">
+                        <label>角端左</label>
+                        <div class="row">
+                            <input type="text" id="feature-left1-1" value="0.8" style="width: 30%">
+                            <input type="text" id="feature-left1-2" value="1.2" style="width: 30%">
+                            <input type="text" id="feature-left1-3" value="1.0" style="width: 30%">
+                        </div>
+                    </div>
+                    <div class="param-group">
+                        <label>地标左1</label>
+                        <div class="row">
+                            <input type="text" id="feature-left2-1" value="0.9" style="width: 30%">
+                            <input type="text" id="feature-left2-2" value="1.1" style="width: 30%">
+                            <input type="text" id="feature-left2-3" value="0.7" style="width: 30%">
+                        </div>
+                    </div>
+                    <div class="param-group">
+                        <label>地标左2</label>
+                        <div class="row">
+                            <input type="text" id="feature-left3-1" value="1.2" style="width: 30%">
+                            <input type="text" id="feature-left3-2" value="0.8" style="width: 30%">
+                            <input type="text" id="feature-left3-3" value="1.0" style="width: 30%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 退出设置模块 -->
+            <div class="module">
+                <div class="module-header">最近检测记录</div>
+                <div id="recent-files">
+                    <p>D:\视觉检测\20250428194521.png</p>
+                    <p>D:\视觉检测\20250428194632.png</p>
+                    <p>D:\视觉检测\20250428194745.png</p>
+                    <p>D:\视觉检测\20250428194857.png</p>
+                    <p>D:\视觉检测\20250428195010.png</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部按钮 -->
+    <div class="btn-container">
+        <button class="btn" onclick="writeParameters()">参数写入</button>
+        <button class="btn" onclick="readData()">数据读取</button>
+        <button class="btn" onclick="testDevice()">设备测试</button>
+        <button class="btn" onclick="showDetectionResults()">查看检测结果</button>
+    </div>
+
+    <script>
+        // 检查用户是否已登录
+        function checkLogin() {
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            if (!isLoggedIn || isLoggedIn !== 'true') {
+                window.location.href = "index.html";
+            }
+            
+            // 更新当前用户显示
+            const username = sessionStorage.getItem('username');
+            document.getElementById('currentUser').textContent = `欢迎，${username}`;
+        }
+
+        // 登出函数
+        function logout() {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('username');
+            window.location.href = "index.html";
+        }
+
+        // 生成模拟数据
+        function generateLineData() {
+            const tableBody = document.getElementById('line-data');
+            tableBody.innerHTML = '';
+            
+            for (let i = 0; i < 6; i++) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>位置${i+1}</td>
+                    <td>${Math.floor(Math.random() * 100)}</td>
+                    <td>${Math.floor(Math.random() * 5) + 1}</td>
+                    <td>${Math.floor(Math.random() * 5) + 1}</td>
+                    <td>${Math.floor(Math.random() * 10) + 1}</td>
+                    <td>${Math.floor(Math.random() * 6900) + 100}</td>
+                `;
+                tableBody.appendChild(row);
+            }
+        }
+
+        function generateDefectData() {
+            const tableBody = document.getElementById('defect-data');
+            tableBody.innerHTML = '';
+            
+            const defectTypes = ['表面划伤', '明显气泡', '表面油污', '炸膜磕碰', '槽口异物', '槽口变形', '挤压条纹', '漏铝夹杂'];
+            
+            for (let i = 0; i < 8; i++) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${defectTypes[i]}</td>
+                    <td>${(Math.random() * 4 + 1).toFixed(1)}</td>
+                    <td>${(Math.random() * 4 + 1).toFixed(1)}</td>
+                    <td>${(Math.random() * 4 + 1).toFixed(1)}</td>
+                    <td>${Math.floor(Math.random() * 1900) + 100}</td>
+                `;
+                tableBody.appendChild(row);
+            }
+        }
+
+        function generateSlotData() {
+            const tableBody = document.getElementById('slot-data');
+            tableBody.innerHTML = '';
+            
+            for (let i = 0; i < 6; i++) {
+                const standard = (Math.random() * 10 + 100).toFixed(1);
+                const actual = (Math.random() * 10 + 100).toFixed(1);
+                const diff = (parseFloat(actual) - parseFloat(standard)).toFixed(1);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>料号${i+1}</td>
+                    <td>${standard}</td>
+                    <td>${actual}</td>
+                    <td>${diff}</td>
+                `;
+                tableBody.appendChild(row);
+            }
+        }
+
+        // 按钮功能
+        function writeParameters() {
+            // 收集所有参数
+            const params = {
+                exposure: [
+                    document.getElementById('exposure1').value,
+                    document.getElementById('exposure2').value,
+                    document.getElementById('exposure3').value,
+                    document.getElementById('exposure4').value,
+                    document.getElementById('exposure5').value,
+                    document.getElementById('exposure6').value,
+                    document.getElementById('exposure7').value
+                ],
+                cropX: [
+                    document.getElementById('crop-x1').value,
+                    document.getElementById('crop-x2').value,
+                    document.getElementById('crop-x3').value
+                ],
+                cropY: [
+                    document.getElementById('crop-y1').value,
+                    document.getElementById('crop-y2').value,
+                    document.getElementById('crop-y3').value,
+                    document.getElementById('crop-y4').value,
+                    document.getElementById('crop-y5').value,
+                    document.getElementById('crop-y6').value
+                ],
+                features: {
+                    left1: [
+                        document.getElementById('feature-left1-1').value,
+                        document.getElementById('feature-left1-2').value,
+                        document.getElementById('feature-left1-3').value
+                    ],
+                    left2: [
+                        document.getElementById('feature-left2-1').value,
+                        document.getElementById('feature-left2-2').value,
+                        document.getElementById('feature-left2-3').value
+                    ],
+                    left3: [
+                        document.getElementById('feature-left3-1').value,
+                        document.getElementById('feature-left3-2').value,
+                        document.getElementById('feature-left3-3').value
+                    ]
+                }
+            };
+            
+            // 实际应用中，这里应该发送参数到后端
+            console.log("发送参数到后端:", params);
+            alert("参数已成功写入设备");
+        }
+
+        function readData() {
+            alert("正在读取最新检测数据...");
+            // 模拟数据更新
+            generateLineData();
+            generateDefectData();
+            generateSlotData();
+        }
+
+        function testDevice() {
+            alert("开始设备自检...");
+            // 模拟设备测试
+            setTimeout(() => {
+                alert("设备自检完成，状态正常");
+            }, 2000);
+        }
+
+        function showDetectionResults() {
+            window.location.href = "detection.html";
+        }
+
+        // 页面加载时检查登录状态并生成数据
+        window.onload = function() {
+            checkLogin();
+            generateLineData();
+            generateDefectData();
+            generateSlotData();
+            
+            // 定时更新数据
+            setInterval(() => {
+                generateLineData();
+                generateDefectData();
+                generateSlotData();
+            }, 5000);
+        };
+    </script>
+</body>
+</html>
+    
