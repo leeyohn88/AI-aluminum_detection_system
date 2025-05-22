@@ -48,6 +48,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
         .btn {
             background: var(--primary-color);
@@ -68,6 +70,29 @@
         }
         .btn-secondary:hover {
             background: #87CEFA;
+        }
+        .btn-danger {
+            background: var(--error-color);
+            color: white;
+        }
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+        .camera-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .camera-control input {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+        .auto-batch {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
         .image-grid {
             display: grid;
@@ -110,6 +135,17 @@
             align-items: center;
             font-size: 12px;
         }
+        .defect-indicator {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background: var(--error-color);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
         .result-table {
             width: 100%;
             border-collapse: collapse;
@@ -146,29 +182,63 @@
             background: var(--primary-color);
             color: white;
         }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+        }
+        .alert-success {
+            background-color: var(--success-color);
+        }
+        .alert-error {
+            background-color: var(--error-color);
+        }
+        .batch-info {
+            background: white;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h2>铝型材检测结果</h2>
-        <button onclick="backToMain()" class="btn">返回主界面</button>
+        <button onclick="backToMain(event)">返回主界面</button>
     </div>
 
     <div class="content">
+        <div class="batch-info">
+            <p>当前批次: <span id="currentBatch">2025-05-22批次</span></p>
+            <p>检测时间: <span id="detectionTime">2025-05-22 15:30:45</span></p>
+            <p>总检测数: <span id="totalCount">100</span>，合格数: <span id="passCount">95</span>，不合格数: <span id="failCount">5</span></p>
+        </div>
+
         <div class="toolbar">
             <div>
-                <button class="btn btn-secondary" onclick="refreshResults()">刷新结果</button>
-                <button class="btn btn-secondary" onclick="exportResults()">导出报告</button>
+                <button class="btn btn-secondary" onclick="refreshResults(event)">刷新结果</button>
+                <button class="btn btn-secondary" onclick="exportResults(event)">导出报告</button>
+                <button class="btn btn-danger" onclick="locateDefects(event)">定位不合格产品</button>
             </div>
-            <div>
-                <select id="batchSelect">
-                    <option value="20250522">2025-05-22批次</option>
-                    <option value="20250521">2025-05-21批次</option>
-                    <option value="20250520">2025-05-20批次</option>
-                </select>
-                <button class="btn" onclick="changeBatch()">切换批次</button>
+            <div class="camera-control">
+                <button class="btn" onclick="startCamera(event)">开启相机</button>
+                <button class="btn btn-danger" onclick="stopCamera(event)">关闭相机</button>
+                <button class="btn" onclick="captureImage(event)">拍照检测</button>
+                <input type="range" id="cameraZoom" min="1" max="10" value="5" oninput="adjustZoom(this.value)">
+                <span>相机缩放: <span id="zoomValue">5</span>x</span>
+            </div>
+            <div class="auto-batch">
+                <label>自动切换批次(秒): </label>
+                <input type="number" id="batchInterval" value="30" min="5">
+                <button class="btn btn-success" onclick="startAutoBatch(event)">开始自动切换</button>
+                <button class="btn btn-danger" onclick="stopAutoBatch(event)">停止自动切换</button>
             </div>
         </div>
+
+        <div id="alertMessage" class="alert" style="display: none;"></div>
 
         <div class="image-grid" id="imageGrid">
             <!-- JavaScript动态生成图片 -->
@@ -207,10 +277,29 @@
     <!-- 大图查看模态框 -->
     <div id="imageModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span class="close" onclick="closeImageModal()">&times;</span>
+            <span class="close" onclick="closeImageModal(event)">&times;</span>
             <h3 id="modalTitle">铝型材检测原图</h3>
             <img id="modalImage" src="" alt="检测原图" style="max-width: 100%;">
             <div id="modalInfo" style="margin-top: 15px;"></div>
+            <div id="defectMarkers" style="position: relative; width: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- 相机实时预览模态框 -->
+    <div id="cameraModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeCameraModal(event)">&times;</span>
+            <h3>相机实时预览</h3>
+            <div class="camera-preview">
+                <video id="cameraPreview" width="800" height="600" autoplay></video>
+            </div>
+            <div class="camera-controls">
+                <button onclick="captureImage(event)">拍照检测</button>
+                <button onclick="zoomIn(event)">放大</button>
+                <button onclick="zoomOut(event)">缩小</button>
+                <button onclick="focusIn(event)">聚焦+</button>
+                <button onclick="focusOut(event)">聚焦-</button>
+            </div>
         </div>
     </div>
 
@@ -245,9 +334,41 @@
             text-decoration: none;
             cursor: pointer;
         }
+        .defect-point {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            z-index: 2;
+        }
+        .defect-tooltip {
+            position: absolute;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            display: none;
+            z-index: 3;
+        }
     </style>
 
     <script>
+        // 全局变量
+        let cameraStream = null;
+        let autoBatchInterval = null;
+        let currentBatchIndex = 0;
+        let batches = [
+            { id: "20250522", name: "2025-05-22批次", date: "2025-05-22 15:30:45" },
+            { id: "20250521", name: "2025-05-21批次", date: "2025-05-21 14:45:20" },
+            { id: "20250520", name: "2025-05-20批次", date: "2025-05-20 16:10:35" },
+            { id: "20250519", name: "2025-05-19批次", date: "2025-05-19 12:20:10" },
+            { id: "20250518", name: "2025-05-18批次", date: "2025-05-18 10:15:45" }
+        ];
+
         // 检查用户是否已登录
         function checkLogin() {
             const isLoggedIn = sessionStorage.getItem('isLoggedIn');
@@ -257,7 +378,10 @@
         }
 
         // 返回主界面
-        function backToMain() {
+        function backToMain(e) {
+            e.preventDefault();
+            stopCamera();
+            stopAutoBatch();
             window.location.href = "main.html";
         }
 
@@ -280,7 +404,7 @@
                 
                 imageItem.innerHTML = `
                     ${hasDefect ? `<div class="defect-marker">${Math.floor(Math.random() * 3) + 1}</div>` : ''}
-                    <img src="${imageUrl}" alt="铝型材${imageId}" onclick="openImageModal(${imageId}, ${hasDefect})">
+                    <img src="${imageUrl}" alt="铝型材${imageId}" onclick="openImageModal(${imageId}, ${hasDefect}, event)">
                     <div class="image-info">
                         <p>料${imageId}</p>
                         <p class="${hasDefect ? 'status-abnormal' : 'status-normal'}">${hasDefect ? '不合格' : '合格'}</p>
@@ -289,6 +413,8 @@
                 
                 imageGrid.appendChild(imageItem);
             }
+            
+            updateBatchStats();
         }
 
         // 生成模拟表格数据
@@ -316,8 +442,8 @@
                     <td>${centerFeature}</td>
                     <td class="${resultClass}">${result}</td>
                     <td>
-                        <button onclick="viewDetails(${i + 1})">详情</button>
-                        <button onclick="viewImage(${i + 1})">查看原图</button>
+                        <button onclick="viewDetails(${i + 1}, event)">详情</button>
+                        <button onclick="viewImage(${i + 1}, event)">查看原图</button>
                     </td>
                 `;
                 
@@ -326,11 +452,14 @@
         }
 
         // 大图查看功能
-        function openImageModal(imageId, hasDefect) {
+        function openImageModal(imageId, hasDefect, e) {
+            if (e) e.preventDefault();
+            
             const modal = document.getElementById('imageModal');
             const modalImage = document.getElementById('modalImage');
             const modalTitle = document.getElementById('modalTitle');
             const modalInfo = document.getElementById('modalInfo');
+            const defectMarkers = document.getElementById('defectMarkers');
             
             modalTitle.textContent = `料${imageId}检测原图`;
             
@@ -354,53 +483,338 @@
                 ${hasDefect ? `<p class="status-abnormal">缺陷类型: 表面划伤、槽口变形</p>` : ''}
             `;
             
+            // 清除之前的标记
+            defectMarkers.innerHTML = '';
+            
+            // 添加缺陷标记（如果有缺陷）
+            if (hasDefect) {
+                for (let i = 0; i < defectCount; i++) {
+                    const x = Math.floor(Math.random() * 80) + 10; // 10-90%
+                    const y = Math.floor(Math.random() * 80) + 10; // 10-90%
+                    
+                    const defectPoint = document.createElement('div');
+                    defectPoint.className = 'defect-point';
+                    defectPoint.style.left = `${x}%`;
+                    defectPoint.style.top = `${y}%`;
+                    defectPoint.onmouseover = function() {
+                        showDefectTooltip(this, x, y);
+                    };
+                    defectPoint.onmouseout = function() {
+                        hideDefectTooltip();
+                    };
+                    
+                    defectMarkers.appendChild(defectPoint);
+                }
+            }
+            
             modal.style.display = 'block';
         }
 
-        function closeImageModal() {
+        function showDefectTooltip(element, x, y) {
+            hideDefectTooltip();
+            
+            const tooltip = document.createElement('div');
+            tooltip.className = 'defect-tooltip';
+            tooltip.id = 'defectTooltip';
+            tooltip.style.left = `${x + 2}%`;
+            tooltip.style.top = `${y}%`;
+            
+            const defectTypes = ['表面划伤', '明显气泡', '表面油污', '炸膜磕碰', '槽口异物', '槽口变形', '挤压条纹', '漏铝夹杂'];
+            const randomType = defectTypes[Math.floor(Math.random() * defectTypes.length)];
+            const severity = ['轻微', '中等', '严重'][Math.floor(Math.random() * 3)];
+            
+            tooltip.textContent = `${randomType} (${severity})`;
+            document.getElementById('defectMarkers').appendChild(tooltip);
+        }
+
+        function hideDefectTooltip() {
+            const tooltip = document.getElementById('defectTooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        }
+
+        function closeImageModal(e) {
+            if (e) e.preventDefault();
             document.getElementById('imageModal').style.display = 'none';
         }
 
         // 表格操作功能
-        function viewDetails(rowNum) {
+        function viewDetails(rowNum, e) {
+            if (e) e.preventDefault();
             alert(`查看料${rowNum}的详细检测数据...`);
         }
 
-        function viewImage(rowNum) {
+        function viewImage(rowNum, e) {
+            if (e) e.preventDefault();
             const hasDefect = Math.random() > 0.7;
-            openImageModal(rowNum, hasDefect);
+            openImageModal(rowNum, hasDefect, e);
         }
 
         // 页面操作
-        function refreshResults() {
-            alert("刷新检测结果...");
-            generateImages();
-            generateTableData();
+        function refreshResults(e) {
+            if (e) e.preventDefault();
+            showAlert("正在刷新检测结果...", "success");
+            setTimeout(() => {
+                generateImages();
+                generateTableData();
+                showAlert("检测结果刷新完成", "success");
+            }, 1000);
         }
 
-        function exportResults() {
-            alert("导出检测报告...");
+        function exportResults(e) {
+            if (e) e.preventDefault();
+            showAlert("正在导出检测报告...", "success");
             // 实际应用中，这里应该调用后端导出API
+            setTimeout(() => {
+                showAlert("检测报告导出成功", "success");
+            }, 1500);
         }
 
-        function changeBatch() {
-            const batchSelect = document.getElementById('batchSelect');
-            const selectedBatch = batchSelect.value;
-            alert(`切换到${selectedBatch}批次的检测结果`);
-            generateImages();
-            generateTableData();
+        function changeBatch(batchId) {
+            if (!batchId) {
+                const batchSelect = document.getElementById('batchSelect');
+                batchId = batchSelect.value;
+            }
+            
+            const batch = batches.find(b => b.id === batchId);
+            if (batch) {
+                currentBatchIndex = batches.indexOf(batch);
+                document.getElementById('currentBatch').textContent = batch.name;
+                document.getElementById('detectionTime').textContent = batch.date;
+                
+                showAlert(`切换到${batch.name}的检测结果`, "success");
+                generateImages();
+                generateTableData();
+            }
         }
 
-        function changePage(pageNum) {
-            alert(`切换到第${pageNum}页`);
+        function changePage(pageNum, e) {
+            if (e) e.preventDefault();
+            showAlert(`切换到第${pageNum}页`, "success");
             // 实际应用中，这里应该加载对应页的数据
+        }
+
+        // 相机控制功能
+        function startCamera(e) {
+            if (e) e.preventDefault();
+            
+            const cameraModal = document.getElementById('cameraModal');
+            const cameraPreview = document.getElementById('cameraPreview');
+            
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { width: 800, height: 600 } })
+                    .then(function(stream) {
+                        cameraStream = stream;
+                        cameraPreview.srcObject = stream;
+                        cameraModal.style.display = 'block';
+                        showAlert("相机已开启", "success");
+                    })
+                    .catch(function(err) {
+                        showAlert("无法访问相机: " + err.message, "error");
+                        console.error("Camera error:", err);
+                    });
+            } else {
+                showAlert("您的浏览器不支持相机功能", "error");
+            }
+        }
+
+        function stopCamera(e) {
+            if (e) e.preventDefault();
+            
+            const cameraModal = document.getElementById('cameraModal');
+            const cameraPreview = document.getElementById('cameraPreview');
+            
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                cameraPreview.srcObject = null;
+            }
+            
+            cameraModal.style.display = 'none';
+            showAlert("相机已关闭", "success");
+        }
+
+        function closeCameraModal(e) {
+            if (e) e.preventDefault();
+            stopCamera();
+        }
+
+        function captureImage(e) {
+            if (e) e.preventDefault();
+            showAlert("正在拍照检测...", "success");
+            
+            // 模拟拍照和检测过程
+            setTimeout(() => {
+                generateImages();
+                generateTableData();
+                
+                // 随机生成一个检测结果
+                const isDefect = Math.random() > 0.7;
+                if (isDefect) {
+                    const defectRow = Math.floor(Math.random() * 20) + 1;
+                    showAlert(`检测完成，发现不合格产品: 料${defectRow}`, "error");
+                    
+                    // 高亮显示不合格产品
+                    setTimeout(() => {
+                        const rows = document.querySelectorAll('#resultTable tr');
+                        if (rows.length >= defectRow) {
+                            rows[defectRow - 1].style.backgroundColor = '#FFCCCC';
+                            
+                            // 滚动到不合格产品所在行
+                            rows[defectRow - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 500);
+                } else {
+                    showAlert("检测完成，未发现不合格产品", "success");
+                }
+                
+                closeCameraModal();
+            }, 1500);
+        }
+
+        function adjustZoom(value) {
+            document.getElementById('zoomValue').textContent = value;
+            // 实际应用中，这里应该调整相机缩放
+        }
+
+        function zoomIn(e) {
+            if (e) e.preventDefault();
+            const zoomControl = document.getElementById('cameraZoom');
+            if (parseInt(zoomControl.value) < parseInt(zoomControl.max)) {
+                zoomControl.value = parseInt(zoomControl.value) + 1;
+                adjustZoom(zoomControl.value);
+            }
+        }
+
+        function zoomOut(e) {
+            if (e) e.preventDefault();
+            const zoomControl = document.getElementById('cameraZoom');
+            if (parseInt(zoomControl.value) > parseInt(zoomControl.min)) {
+                zoomControl.value = parseInt(zoomControl.value) - 1;
+                adjustZoom(zoomControl.value);
+            }
+        }
+
+        function focusIn(e) {
+            if (e) e.preventDefault();
+            showAlert("聚焦增强", "success");
+            // 实际应用中，这里应该调整相机聚焦
+        }
+
+        function focusOut(e) {
+            if (e) e.preventDefault();
+            showAlert("聚焦减弱", "success");
+            // 实际应用中，这里应该调整相机聚焦
+        }
+
+        // 自动切换批次功能
+        function startAutoBatch(e) {
+            if (e) e.preventDefault();
+            stopAutoBatch();
+            
+            const interval = parseInt(document.getElementById('batchInterval').value) * 1000;
+            if (isNaN(interval) || interval < 5000) {
+                showAlert("批次切换间隔不能小于5秒", "error");
+                return;
+            }
+            
+            autoBatchInterval = setInterval(() => {
+                currentBatchIndex = (currentBatchIndex + 1) % batches.length;
+                changeBatch(batches[currentBatchIndex].id);
+            }, interval);
+            
+            showAlert(`已开始自动切换批次，间隔${interval/1000}秒`, "success");
+        }
+
+        function stopAutoBatch(e) {
+            if (e) e.preventDefault();
+            if (autoBatchInterval) {
+                clearInterval(autoBatchInterval);
+                autoBatchInterval = null;
+                showAlert("已停止自动切换批次", "success");
+            }
+        }
+
+        // 定位不合格产品
+        function locateDefects(e) {
+            if (e) e.preventDefault();
+            showAlert("正在定位不合格产品...", "success");
+            
+            setTimeout(() => {
+                const tableBody = document.getElementById('resultTable');
+                const rows = tableBody.querySelectorAll('tr');
+                let defectCount = 0;
+                
+                rows.forEach((row, index) => {
+                    const statusCell = row.querySelector('td:nth-child(7)');
+                    if (statusCell && statusCell.textContent === '不合格') {
+                        row.style.backgroundColor = '#FFCCCC';
+                        defectCount++;
+                    } else {
+                        row.style.backgroundColor = '';
+                    }
+                });
+                
+                if (defectCount > 0) {
+                    showAlert(`已定位${defectCount}个不合格产品`, "error");
+                    
+                    // 滚动到第一个不合格产品
+                    const firstDefect = tableBody.querySelector('tr td:nth-child(7):contains("不合格")');
+                    if (firstDefect) {
+                        firstDefect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } else {
+                    showAlert("未发现不合格产品", "success");
+                }
+            }, 1000);
+        }
+
+        // 显示提示信息
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alertMessage');
+            alertBox.textContent = message;
+            alertBox.className = 'alert';
+            
+            if (type === 'success') {
+                alertBox.classList.add('alert-success');
+            } else if (type === 'error') {
+                alertBox.classList.add('alert-error');
+            }
+            
+            alertBox.style.display = 'block';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 3000);
+        }
+
+        // 更新批次统计信息
+        function updateBatchStats() {
+            const totalCount = 36;
+            let passCount = 0;
+            
+            const imageItems = document.querySelectorAll('.image-item');
+            imageItems.forEach(item => {
+                const status = item.querySelector('.image-info p:last-child');
+                if (status && status.textContent === '合格') {
+                    passCount++;
+                }
+            });
+            
+            const failCount = totalCount - passCount;
+            
+            document.getElementById('totalCount').textContent = totalCount;
+            document.getElementById('passCount').textContent = passCount;
+            document.getElementById('failCount').textContent = failCount;
         }
 
         // 页面加载时检查登录状态并生成数据
         window.onload = function() {
             checkLogin();
-            generateImages();
-            generateTableData();
+            changeBatch(batches[0].id);
+            document.getElementById('batchSelect').value = batches[0].id;
         };
     </script>
 </body>
